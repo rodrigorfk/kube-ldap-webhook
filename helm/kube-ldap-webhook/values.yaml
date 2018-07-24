@@ -1,0 +1,19 @@
+ldap:
+  host: 127.0.0.1
+  port: 389
+  tls: false
+
+admin:
+  bindDN: 'cn=admin,dc=k8s,dc=com'
+  password: password
+
+user:
+  searchBase: 'ou=People,dc=k8s,dc=com'
+  nameAttribute: uid
+  uidAttribute: uidNumber
+  searchFilter: '(&(kubernetesToken=%s))'
+
+group:
+  searchBase: 'ou=Groups,dc=k8s,dc=com'
+  nameAttribute: cn
+  searchFilter: '(|(&(objectClass=posixGroup)(memberUid=%s))(&(member=%s)(objectClass=groupOfNames)))'

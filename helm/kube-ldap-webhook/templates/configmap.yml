@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ldap-webhook-kubeconfig
+data:
+  webhook-auth: |
+    clusters:
+    - name: ldap-authn
+      cluster:
+        server: http://localhost:8087/auth
+    users:
+      - name: apiserver
+    current-context: webhook
+    contexts:
+    - name: webhook
+      context:
+        cluster: ldap-authn
+        user: apiserver

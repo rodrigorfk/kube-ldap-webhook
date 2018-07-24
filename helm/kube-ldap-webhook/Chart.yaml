@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Kubernetes LDAP authentication service written in Go.
+name: kube-ldap-webhook
+version: 0.1.0
