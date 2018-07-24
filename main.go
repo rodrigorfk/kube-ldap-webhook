@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/ldap.v2"
 )
+import b64 "encoding/base64"
 
 type APIScheme struct {
 	Version string  `json:"apiVersion" binding:"required"`
@@ -32,6 +33,11 @@ type User struct {
 	Name   string
 	ID     string
 	Groups []string
+}
+
+type Credentials struct {
+	username string
+	password string
 }
 
 var authFailed = gin.H{
@@ -73,8 +79,8 @@ func auth(c *gin.Context) {
 
 func guidToOctetString(guid string) string {
 	var buffer bytes.Buffer
-	for index, guidCharacter := range(guid) {
-		if index % 2 == 0 {
+	for index, guidCharacter := range guid {
+		if index%2 == 0 {
 			buffer.WriteString("\\")
 		}
 		buffer.WriteString(string(guidCharacter))
@@ -106,9 +112,12 @@ func authLDAP(token string) (*User, error) {
 		token = guidToOctetString(token)
 	}
 
+	cred := credentials(token)
+	log.Printf("Credentials: %v %v\n", cred.username, cred.password)
+
 	sru, err := l.Search(ldap.NewSearchRequest(
 		os.Getenv("USER_SEARCH_BASE"), ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf(os.Getenv("USER_SEARCH_FILTER"), token),
+		fmt.Sprintf(os.Getenv("USER_SEARCH_FILTER"), cred.username),
 		[]string{os.Getenv("USER_NAME_ATTRIBUTE"), os.Getenv("USER_UID_ATTRIBUTE")},
 		nil,
 	))
@@ -126,7 +135,7 @@ func authLDAP(token string) (*User, error) {
 		user.DN = entry.DN
 		user.Name = entry.GetAttributeValue(os.Getenv("USER_NAME_ATTRIBUTE"))
 		user.ID = entry.GetAttributeValue(os.Getenv("USER_UID_ATTRIBUTE"))
-		log.Printf("Search user result: %v %v\n", user.Name, user.ID)
+		log.Printf("Search user result: %v %v %v\n", user.Name, user.ID, user.DN)
 	}
 
 	srg, err := l.Search(ldap.NewSearchRequest(
@@ -144,7 +153,20 @@ func authLDAP(token string) (*User, error) {
 		user.Groups = append(user.Groups, g)
 	}
 	log.Printf("Search group result: %v\n", user.Groups)
+
+	// Bind as the user to verify their password
+	err = l.Bind(user.DN, cred.password)
+	if err != nil {
+		return nil, err
+	}
+
 	return user, nil
+}
+
+func credentials(token string) Credentials {
+	sDec, _ := b64.StdEncoding.DecodeString(token)
+	s := strings.Split(string(sDec), ":")
+	return Credentials{s[0], s[1]}
 }
 
 func main() {
