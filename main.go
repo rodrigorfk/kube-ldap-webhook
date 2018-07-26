@@ -113,7 +113,6 @@ func authLDAP(token string) (*User, error) {
 	}
 
 	cred := credentials(token)
-	log.Printf("Credentials: %v %v\n", cred.username, cred.password)
 
 	sru, err := l.Search(ldap.NewSearchRequest(
 		os.Getenv("USER_SEARCH_BASE"), ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
@@ -135,7 +134,7 @@ func authLDAP(token string) (*User, error) {
 		user.DN = entry.DN
 		user.Name = entry.GetAttributeValue(os.Getenv("USER_NAME_ATTRIBUTE"))
 		user.ID = entry.GetAttributeValue(os.Getenv("USER_UID_ATTRIBUTE"))
-		log.Printf("Search user result: %v %v %v\n", user.Name, user.ID, user.DN)
+		log.Printf("Search user result: %v %v\n", user.Name, user.ID)
 	}
 
 	srg, err := l.Search(ldap.NewSearchRequest(
