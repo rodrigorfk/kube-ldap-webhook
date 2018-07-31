@@ -157,6 +157,7 @@ func authLDAP(token string) (*User, error) {
 	// Bind as the user to verify their password
 	err = l.Bind(user.DN, cred.password)
 	if err != nil {
+		log.Fatal(err)
 		return nil, err
 	}
 
